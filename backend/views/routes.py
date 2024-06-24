@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request, current_app
 from models.models import db, User, UserRole
-from utils.utils import hash_password, check_password, JWT_KEY
+from utils.utils import hash_password, check_password, token_required, JWT_KEY
 import jwt
 import datetime
 
@@ -31,10 +31,9 @@ def login():
     if not check_password(password, user.password):
         return jsonify({"message": "Password incorrect"}), 400
     
-    token = jwt.encode({"user_id": user.id,
-                        "username": user.username,
-                        "role": str(user.role)},
-                        JWT_KEY)
+    token = jwt.encode({"user_id": user.id},
+                        JWT_KEY,
+                        "HS256")
     
     return jsonify({"message": "Login success", "username": user.username, "token": token}), 200
     
@@ -62,3 +61,9 @@ def register():
     db.session.commit()
 
     return jsonify({"message": "User registered"}), 200
+
+
+@api.route('/protected', methods=['GET'])
+@token_required
+def protected_route(user_id):
+    return jsonify({"message": f"Hello, user {user_id}!"})
