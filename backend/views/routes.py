@@ -44,8 +44,9 @@ def register():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
+    isAdmin = data.get('isAdmin')
 
-    if not username and not password:
+    if not username or not password or isAdmin is None:
         return jsonify({"message": "Missing fields"}), 400
     
     if User.query.filter_by(username=username).first():
@@ -53,14 +54,14 @@ def register():
     
     salt, password = hash_password(password)
 
-    if username == 'admin':
+    if isAdmin:
         new_user = User(username=username, salt=salt, password=password, role = UserRole.ADMIN)
     else:
         new_user = User(username=username, salt=salt, password=password, role = UserRole.USER)
     db.session.add(new_user)
     db.session.commit()
 
-    return jsonify({"message": "User registered"}), 200
+    return jsonify({"message": "User registered successfully"}), 200
 
 
 @api.route('/protected', methods=['GET'])
