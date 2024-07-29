@@ -108,7 +108,6 @@ def add_stock():
     """
     
     try:
-        # Retrieve JSON data
         data = request.get_json()
         name = data.get('name')
         product_dict = data.get('productDict')
