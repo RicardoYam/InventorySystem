@@ -100,8 +100,6 @@ class Product(db.Model):
     
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(unique=True, nullable=False)
-    color: Mapped[str] = mapped_column(nullable=False)
-    size: Mapped[ProductSize] = mapped_column(nullable=False)
     purchased_price: Mapped[float] = mapped_column(nullable=False)
     selling_price: Mapped[float] = mapped_column(nullable=False)
     image_name: Mapped[str] = mapped_column(nullable=True)
@@ -118,8 +116,10 @@ class Product(db.Model):
 class Stock(db.Model):
     __tablename__ = "stock"
     
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     product_id: Mapped[Optional[int]] = mapped_column(ForeignKey("product.id"))
+    color: Mapped[str] = mapped_column(nullable=False)
+    size: Mapped[ProductSize] = mapped_column(nullable=False)
     quantity: Mapped[int] = mapped_column(nullable=False)
     create_time: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 

@@ -1,2 +1,5 @@
 # Ignore the entire instance directory
 instance/
+
+# Ignore Python cache files
+__pycache__/
