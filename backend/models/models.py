@@ -10,8 +10,8 @@ import datetime
 db = SQLAlchemy()
 
 class UserRole(enum.Enum):
-    ADMIN = "Admin"
-    USER = "User"
+    Admin = "ADMIN"
+    User = "USER"
 
 
 class CustomerLevel(enum.Enum):
@@ -29,10 +29,10 @@ class PaymentMethod(enum.Enum):
     
     
 class ProductSize(enum.Enum):
-    SMALL = "S"
-    MEDIUM = "M"
-    LARGE = "L"
-    EXTRALARGE = "XL"
+    S = "SMALL"
+    M = "MEDIUM"
+    L = "LARGE"
+    XL = "EXTRALARGE"
 
 
 class User(db.Model):

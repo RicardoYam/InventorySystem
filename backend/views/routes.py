@@ -81,7 +81,7 @@ def add_stock():
         "name": <str>, # required
         "productDict": {
             "<size>": {
-                "<color>": <int> # quantity
+                "<color>": <quantity>
             }
         }, # required
         "purchasedPrice": <float>, # required
@@ -147,8 +147,8 @@ def add_stock():
             for color, quantity in colors.items():
                 new_stock = Stock(
                     product_id=new_product.id,
-                    color=color,
-                    size=ProductSize[size],
+                    color=color.capitalize(),
+                    size=size,
                     quantity=quantity,
                     create_time=datetime.datetime.now()
                 )
@@ -159,6 +159,130 @@ def add_stock():
     except Exception as e:
         db.session.rollback()
         return jsonify({"message": f"Failed to add product: {str(e)}"}), 500
+    
+
+@api.route('/stocks', methods=['GET'])
+def list_stocks():
+    """
+    Event: List all products with their stock information, with pagination and optional name and size filtering.
+
+    Retrieves all products from the database along with their associated stocks
+    and returns them in JSON format. Supports pagination and filtering by product name and size.
+
+    Query Parameters:
+        page (int): The page number to retrieve. Default is 1.
+        per_page (int): The number of items per page. Default is 10.
+        name (str): Optional. The name of the product to search for. Case insensitive partial match.
+        size (str): Optional. The size of the product to filter by. Must be one of 'S', 'M', 'L', 'XL'.
+
+    JSON format for the response to the client:
+    {
+        "data": [
+            {
+                "id": <int>,
+                "name": <str>,
+                "purchased_price": <float>,
+                "selling_price": <float>,
+                "image_url": <str>,
+                "stocks": [
+                    {
+                        "id": <int>,
+                        "color": <str>,
+                        "size": <str>,
+                        "quantity": <int>
+                    }
+                ]
+            }
+        ],
+        "colors": [<str>],  # List of unique colors found in the stocks
+        "sizes": [<str>],   # List of all possible sizes from ProductSize enum
+        "total": <int>,     # Total number of products matching the filters
+        "pages": <int>,     # Total number of pages based on the current per_page setting
+        "current_page": <int>  # Current page number
+    }
+
+    Args:
+        None
+
+    Raises:
+        KeyError: If the provided size is not a valid enum value.
+        Exception: For any other errors encountered during data retrieval.
+
+    Returns:
+        Response: JSON response with the list of products and their stock information.
+    """
+    
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        name = request.args.get('name', type=str)
+        size = request.args.get('size', type=str)
+
+        # Base query
+        query = db.session.query(Product)
+
+        # Filter by name if provided
+        if name:
+            query = query.filter(Product.name.ilike(f'%{name}%'))
+
+        # Filter by size if provided
+        if size:
+            try:
+                size_enum = ProductSize[size.upper()]
+                query = query.join(Product.stocks).filter(Stock.size == size_enum)
+            except KeyError:
+                return jsonify({"message": f"Invalid size: {size}"}), 400
+
+        # Paginate the results
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        products = pagination.items
+
+        response_data = []
+        unique_colors = set()
+        for product in products:
+            product_data = {
+                "id": product.id,
+                "name": product.name,
+                "purchased_price": product.purchased_price,
+                "selling_price": product.selling_price,
+                "image_url": product.image_url,
+                "stocks": [
+                    {
+                        "id": stock.id,
+                        "color": stock.color,
+                        "size": stock.size.name,
+                        "quantity": stock.quantity
+                    } for stock in product.stocks if stock.size == size_enum
+                ] if size else [
+                    {
+                        "id": stock.id,
+                        "color": stock.color,
+                        "size": stock.size.name,
+                        "quantity": stock.quantity
+                    } for stock in product.stocks
+                ]
+            }
+            # Add colors to the unique colors set
+            for stock in product.stocks:
+                unique_colors.add(stock.color)
+
+            response_data.append(product_data)
+
+        # Convert unique_colors set to list
+        unique_colors_list = list(unique_colors)
+        size_list = [size.name for size in ProductSize]
+
+        return jsonify({
+            "data": response_data,
+            "colors": unique_colors_list,
+            "sizes": size_list,
+            "total": pagination.total,
+            "pages": pagination.pages,
+            "current_page": pagination.page
+        }), 200
+    except Exception as e:
+        current_app.logger.error(f"Failed to retrieve products: {str(e)}")
+        return jsonify({"message": f"Failed to retrieve products: {str(e)}"}), 500
 
 
 @api.route('/protected', methods=['GET'])
