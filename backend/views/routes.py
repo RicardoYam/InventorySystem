@@ -70,12 +70,7 @@ def login():
 
     token = jwt.encode({"user_id": user.id}, JWT_KEY, "HS256")
 
-    return (
-        jsonify(
-            {"message": "Login success", "username": user.username, "token": token}
-        ),
-        200,
-    )
+    return jsonify({"message": "Login success", "username": user.username, "token": token}),200
 
 
 @api.route("/register", methods=["POST"])
